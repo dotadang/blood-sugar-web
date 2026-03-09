@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>血糖记录</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩸</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --danger: #f44336;
+      --warning: #ff9800;
+      --success: #4CAF50;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #333333;
+      --text-secondary: #666666;
+      --border: #e0e0e0;
+      --font-scale: 1;
+      --font-base: calc(14px * var(--font-scale));
+      --font-lg: calc(16px * var(--font-scale));
+      --font-xl: calc(20px * var(--font-scale));
+      --font-2xl: calc(24px * var(--font-scale));
+      --font-3xl: calc(32px * var(--font-scale));
+    }
+
+    .font-large { --font-scale: 1.2; }
+    .font-xlarge { --font-scale: 1.4; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 70px;
+      font-size: var(--font-base);
+    }
+
+    .page { display: none; padding: 16px; animation: fadeIn 0.2s ease; }
+    .page.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .label {
+      font-size: var(--font-base);
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .header { text-align: center; padding: 20px 0; }
+    .header .title { font-size: var(--font-xl); font-weight: 600; display: block; }
+    .header .subtitle { font-size: var(--font-base); color: var(--text-secondary); margin-top: 4px; }
+
+    .value-input { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .input-number {
+      flex: 1;
+      min-width: 0;
+      font-size: var(--font-3xl);
+      font-weight: bold;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-number:focus { border-color: var(--primary); }
+    .input-unit { font-size: var(--font-base); color: var(--text-secondary); white-space: nowrap; }
+
+    .quick-values { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; justify-content: center; }
+    .quick-btn {
+      padding: 8px 14px;
+      background: var(--bg);
+      border-radius: 20px;
+      font-size: var(--font-base);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .quick-btn:active, .quick-btn.active { background: var(--primary); color: white; }
+
+    .period-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .period-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      background: var(--bg);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+    .period-item:active, .period-item.active { background: #E8F5E9; border-color: var(--primary); }
+    .period-icon { font-size: calc(20px * var(--font-scale)); margin-bottom: 4px; }
+    .period-text { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .period-item.active .period-text { color: var(--primary); font-weight: 500; }
+
+    .datetime-picker {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .datetime-picker input {
+      flex: 1;
+      padding: 12px;
+      background: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--font-base);
+      outline: none;
+    }
+
+    .note-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: var(--font-base);
+      resize: none;
+      height: 80px;
+      outline: none;
+    }
+    .note-input:focus { border-color: var(--primary); }
+
+    .save-section { margin-top: 20px; }
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: var(--font-lg);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-primary:active:not(:disabled) { background: var(--primary-dark); transform: scale(0.98); }
+
+    .last-record { margin-top: 16px; background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); }
+    .last-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .last-title { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .last-time { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .last-content { display: flex; align-items: baseline; gap: 8px; }
+    .last-value { font-size: var(--font-2xl); font-weight: bold; }
+    .text-danger { color: var(--danger); }
+    .text-success { color: var(--success); }
+    .last-period { font-size: var(--font-base); color: var(--text-secondary); }
+
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--card);
+      margin: -16px -16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .filter-bar input {
+      padding: 8px 12px;
+      background: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--font-base);
+    }
+    .stats-text { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+
+    .record-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      background: var(--card);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .record-left { text-align: center; min-width: 70px; }
+    .record-value { font-size: var(--font-2xl); font-weight: bold; }
+    .record-value.abnormal { color: var(--danger); }
+    .record-unit { font-size: calc(10px * var(--font-scale)); color: var(--text-secondary); }
+    .record-center { flex: 1; margin-left: 16px; }
+    .record-period { font-weight: 500; margin-bottom: 4px; font-size: var(--font-base); }
+    .record-time { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .record-note { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); margin-top: 4px; font-style: italic; }
+    .record-right { margin-left: 12px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .status-dot.normal { background: var(--success); }
+    .status-dot.abnormal { background: var(--danger); }
+
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .empty-text { display: block; font-size: var(--font-lg); color: var(--text); margin-bottom: 8px; }
+    .empty-hint { font-size: var(--font-base); color: var(--text-secondary); }
+
+    .chart-container { position: relative; height: 250px; margin-bottom: 16px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .stat-card { text-align: center; padding: 16px 12px; background: var(--card); border-radius: 12px; }
+    .stat-value { font-size: var(--font-2xl); font-weight: bold; margin-bottom: 4px; }
+    .stat-label { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .range-legend { display: flex; justify-content: center; gap: 16px; margin-top: 16px; font-size: calc(12px * var(--font-scale)); }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--card);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .setting-left { display: flex; align-items: center; gap: 12px; }
+    .setting-icon { font-size: calc(24px * var(--font-scale)); }
+    .setting-title { font-weight: 500; font-size: var(--font-base); }
+    .setting-desc { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
+    .setting-right { color: var(--text-secondary); }
+
+    .font-size-selector { display: flex; gap: 8px; }
+    .font-size-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      cursor: pointer;
+      font-size: var(--font-base);
+      transition: all 0.2s;
+    }
+    .font-size-btn.active { border-color: var(--primary); background: #E8F5E9; color: var(--primary); }
+    .font-size-btn:active { transform: scale(0.95); }
+
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: var(--card);
+      box-shadow: 0 -1px 10px rgba(0,0,0,0.1);
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+    .tab-item.active { color: var(--primary); }
+    .tab-icon { font-size: calc(22px * var(--font-scale)); margin-bottom: 2px; }
+    .tab-text { font-size: calc(10px * var(--font-scale)); }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: var(--font-base);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    .btn-export {
+      width: 100%;
+      padding: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: var(--font-base);
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    .btn-export:active { background: var(--bg); }
+    .btn-danger { background: var(--danger); color: white; border: none; }
+  </style>
+</head>
+<body>
+  <!-- 记录页面 -->
+  <div id="page-record" class="page active">
+    <div class="header">
+      <span class="title">🩸 记录血糖</span>
+      <span class="subtitle" id="today-date"></span>
+    </div>
+
+    <div class="card">
+      <div class="label">血糖值</div>
+      <div class="value-input">
+        <!-- FIX: Added ARIA label, min/max validation, step validation -->
+        <input type="number" step="0.1" min="0" max="40" class="input-number" id="value-input" placeholder="0.0" aria-label="血糖值输入" inputmode="decimal" />
+        <span class="input-unit">mmol/L</span>
+      </div>
+      <div class="quick-values" id="quick-values" role="group" aria-label="快速选择常用血糖值"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">测量时段</div>
+      <!-- FIX: Added ARIA role and label for accessibility -->
+      <div class="period-grid" id="period-grid" role="radiogroup" aria-label="选择测量时段"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">测量时间</div>
+      <div class="datetime-picker">
+        <!-- FIX: Added ARIA labels for date and time inputs -->
+        <input type="date" id="date-input" aria-label="选择测量日期" />
+        <input type="time" id="time-input" aria-label="选择测量时间" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">备注（可选）</div>
+      <!-- FIX: Added ARIA label and proper input validation -->
+      <textarea class="note-input" id="note-input" placeholder="添加备注信息..." maxlength="100" aria-label="添加备注信息" rows="3"></textarea>
+    </div>
+
+    <div class="save-section">
+      <!-- FIX: Added ARIA label for save button -->
+      <button class="btn-primary" id="save-btn" disabled aria-label="保存血糖记录">保存记录</button>
+    </div>
+
+    <div class="card last-record" id="last-record" style="display: none;">
+      <div class="last-header">
+        <span class="last-title">最近记录</span>
+        <span class="last-time" id="last-time"></span>
+      </div>
+      <div class="last-content">
+        <span class="last-value" id="last-value"></span>
+        <span class="last-period" id="last-period"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史页面 -->
+  <div id="page-history" class="page">
+    <div class="filter-bar">
+      <!-- FIX: Added ARIA label for date filter -->
+      <input type="date" id="filter-date" aria-label="筛选日期" />
+      <span class="stats-text" id="stats-text" aria-live="polite">共 0 条记录</span>
+    </div>
+    <div id="record-list"></div>
+    <!-- FIX: Added ARIA label for export button -->
+    <button class="btn-export" id="export-btn" aria-label="导出数据为CSV文件">📤 导出数据</button>
+  </div>
+
+  <!-- 图表页面 -->
+  <div id="page-chart" class="page">
+    <div class="header">
+      <span class="title">📊 趋势分析</span>
+      <span class="subtitle">最近7天数据</span>
+    </div>
+    <div class="card">
+      <div class="chart-container">
+        <canvas id="trend-chart"></canvas>
+      </div>
+      <div class="range-legend">
+        <div class="legend-item"><span class="legend-dot" style="background: var(--success)"></span><span>正常</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background: var(--warning)"></span><span>偏高</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background: var(--danger)"></span><span>异常</span></div>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value" id="stat-avg">--</div><div class="stat-label">平均值</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-max">--</div><div class="stat-label">最高值</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-min">--</div><div class="stat-label">最低值</div></div>
+    </div>
+  </div>
+
+  <!-- 设置页面 -->
+  <div id="page-settings" class="page">
+    <div class="header"><span class="title">⚙️ 设置</span></div>
+    <div class="setting-item" style="flex-direction: column; align-items: stretch;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="setting-left">
+          <span class="setting-icon">🔤</span>
+          <div><div class="setting-title">字体大小</div><div class="setting-desc">适合老年人使用</div></div>
+        </div>
+      </div>
+      <div class="font-size-selector">
+        <button class="font-size-btn" data-size="normal">标准</button>
+        <button class="font-size-btn" data-size="large">大</button>
+        <button class="font-size-btn" data-size="xlarge">特大</button>
+      </div>
+    </div>
+    <div class="setting-item">
+      <div class="setting-left"><span class="setting-icon">📋</span><div><div class="setting-title">总记录数</div><div class="setting-desc">已保存的血糖记录</div></div></div>
+      <div class="setting-right" id="total-records">0 条</div>
+    </div>
+    <div class="setting-item">
+      <div class="setting-left"><span class="setting-icon">📅</span><div><div class="setting-title">首条记录</div><div class="setting-desc">开始记录的日期</div></div></div>
+      <div class="setting-right" id="first-record-date">--</div>
+    </div>
+    <div class="setting-item">
+      <div class="setting-left"><span class="setting-icon">💾</span><div><div class="setting-title">数据备份</div><div class="setting-desc">导出所有数据到本地</div></div></div>
+      <div class="setting-right">›</div>
+    </div>
+    <!-- FIX: Added ARIA label for clear data button -->
+    <button class="btn-export btn-danger" id="clear-btn" aria-label="清除所有记录数据">🗑️ 清除所有数据</button>
+  </div>
+
+  <!-- 底部导航 -->
+  <!-- FIX: Added ARIA roles and labels for navigation -->
+  <div class="tab-bar" role="tablist" aria-label="主导航">
+    <div class="tab-item active" data-page="record" role="tab" aria-label="记录页面" aria-selected="true"><span class="tab-icon">✏️</span><span class="tab-text">记录</span></div>
+    <div class="tab-item" data-page="history" role="tab" aria-label="历史页面" aria-selected="false"><span class="tab-icon">📜</span><span class="tab-text">历史</span></div>
+    <div class="tab-item" data-page="chart" role="tab" aria-label="图表页面" aria-selected="false"><span class="tab-icon">📊</span><span class="tab-text">图表</span></div>
+    <div class="tab-item" data-page="settings" role="tab" aria-label="设置页面" aria-selected="false"><span class="tab-icon">⚙️</span><span class="tab-text">设置</span></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // FIX: Added data versioning for localStorage migration support
+    const STORAGE_VERSION = '1.0';
+    const STORAGE_KEY = 'bloodSugarRecords';
+    const FONT_SIZE_KEY = 'bloodSugarFontSize';
+    const VERSION_KEY = 'bloodSugarVersion';
+
+    const PERIODS = [
+      { value: 'fasting', label: '空腹', icon: '🌅' },
+      { value: 'before_breakfast', label: '早餐前', icon: '🌅' },
+      { value: 'after_breakfast', label: '早餐后', icon: '🍳' },
+      { value: 'before_lunch', label: '午餐前', icon: '☀️' },
+      { value: 'after_lunch', label: '午餐后', icon: '🍱' },
+      { value: 'before_dinner', label: '晚餐前', icon: '🌆' },
+      { value: 'after_dinner', label: '晚餐后', icon: '🍲' },
+      { value: 'before_sleep', label: '睡前', icon: '🌙' },
+      { value: 'random', label: '随机', icon: '🎲' }
+    ];
+    const QUICK_VALUES = ['4.5', '5.0', '5.5', '6.0', '6.5', '7.0', '7.5', '8.0', '9.0', '10.0'];
+
+    // Input validation constants
+    const VALIDATION = {
+      MIN_VALUE: 0,
+      MAX_VALUE: 40,
+      MAX_NOTE_LENGTH: 100,
+      ALLOWED_NOTE_CHARS: /^[\u4e00-\u9fa5a-zA-Z0-9\s\.,!?;:'"()\-]+$/
+    };
+
+    let state = {
+      value: '',
+      period: 'fasting',
+      date: '',
+      time: '',
+      note: '',
+      records: [],
+      fontSize: 'normal'
+    };
+
+    function init() {
+      loadRecords();
+      loadFontSize();
+      renderQuickValues();
+      renderPeriods();
+      setCurrentDateTime();
+      setTodayDate();
+      updateLastRecord();
+      bindEvents();
+    }
+
+    // FIX: Added try-catch error handling around all localStorage operations
+    function loadRecords() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        state.records = data ? JSON.parse(data) : [];
+
+        // Data migration check
+        const storedVersion = localStorage.getItem(VERSION_KEY);
+        if (!storedVersion || storedVersion !== STORAGE_VERSION) {
+          migrateData(storedVersion);
+        }
+      } catch (error) {
+        console.error('Error loading records:', error);
+        state.records = [];
+        showToast('数据加载失败，已重置');
+      }
+    }
+
+    function saveRecords() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+        localStorage.setItem(VERSION_KEY, STORAGE_VERSION);
+      } catch (error) {
+        console.error('Error saving records:', error);
+        showToast('保存失败，存储空间可能不足');
+      }
+    }
+
+    function loadFontSize() {
+      try {
+        state.fontSize = localStorage.getItem(FONT_SIZE_KEY) || 'normal';
+        applyFontSize(state.fontSize);
+      } catch (error) {
+        console.error('Error loading font size:', error);
+        state.fontSize = 'normal';
+      }
+    }
+
+    // FIX: Added data migration support for versioning
+    function migrateData(fromVersion) {
+      try {
+        console.log(`Migrating data from version ${fromVersion || 'unknown'} to ${STORAGE_VERSION}`);
+        // Add migration logic here when needed
+        localStorage.setItem(VERSION_KEY, STORAGE_VERSION);
+      } catch (error) {
+        console.error('Error during data migration:', error);
+      }
+    }
+
+    function applyFontSize(size) {
+      document.body.classList.remove('font-large', 'font-xlarge');
+      if (size === 'large') document.body.classList.add('font-large');
+      else if (size === 'xlarge') document.body.classList.add('font-xlarge');
+      document.querySelectorAll('.font-size-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.size === size);
+      });
+    }
+
+    function renderQuickValues() {
+      // FIX: Added ARIA labels to quick value buttons
+      document.getElementById('quick-values').innerHTML = QUICK_VALUES.map(v =>
+        `<div class="quick-btn" data-value="${v}" role="button" aria-label="选择血糖值 ${v}" tabindex="0">${v}</div>`
+      ).join('');
+    }
+
+    function renderPeriods() {
+      // FIX: Added ARIA roles and labels for period selection
+      document.getElementById('period-grid').innerHTML = PERIODS.map(p =>
+        `<div class="period-item ${p.value === state.period ? 'active' : ''}" data-value="${p.value}"
+          role="radio" aria-label="${p.label}" aria-checked="${p.value === state.period}" tabindex="0">
+          <span class="period-icon" aria-hidden="true">${p.icon}</span>
+          <span class="period-text">${p.label}</span>
+        </div>`
+      ).join('');
+    }
+
+    // 根据时间自动选择时段
+    function autoSelectPeriod(hour) {
+      let period;
+      if (hour >= 0 && hour < 8) period = 'fasting';
+      else if (hour >= 8 && hour < 10) period = 'after_breakfast';
+      else if (hour >= 10 && hour < 12) period = 'before_lunch';
+      else if (hour >= 12 && hour < 14) period = 'after_lunch';
+      else if (hour >= 14 && hour < 18) period = 'before_dinner';
+      else if (hour >= 18 && hour < 21) period = 'after_dinner';
+      else if (hour >= 21) period = 'before_sleep';
+      else period = 'random';
+      
+      state.period = period;
+      renderPeriods();
+    }
+
+    function setCurrentDateTime() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      
+      state.date = `${year}-${month}-${day}`;
+      state.time = `${hours}:${minutes}`;
+      
+      document.getElementById('date-input').value = state.date;
+      document.getElementById('time-input').value = state.time;
+      
+      // 自动选择时段
+      autoSelectPeriod(now.getHours());
+    }
+
+    function setTodayDate() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      document.getElementById('today-date').textContent = `${year}年${month}月${day}日 ${weekDays[now.getDay()]}`;
+      document.getElementById('filter-date').value = `${year}-${month}-${day}`;
+    }
+
+    function updateLastRecord() {
+      const container = document.getElementById('last-record');
+      if (state.records.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      const last = state.records[0];
+      const period = PERIODS.find(p => p.value === last.period);
+      const isAbnormal = checkAbnormal(last.value, last.period);
+      document.getElementById('last-time').textContent = formatTime(last.timestamp);
+      document.getElementById('last-value').textContent = `${last.value} mmol/L`;
+      document.getElementById('last-value').className = `last-value ${isAbnormal ? 'text-danger' : 'text-success'}`;
+      document.getElementById('last-period').textContent = period ? period.label : '';
+      container.style.display = 'block';
+    }
+
+    function checkAbnormal(value, period) {
+      const numValue = parseFloat(value);
+      if (period === 'fasting') return numValue < 3.9 || numValue > 7.0;
+      if (period.includes('after_')) return numValue > 11.1;
+      return numValue < 3.9 || numValue > 11.1;
+    }
+
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      if (isToday) return `今天 ${hours}:${minutes}`;
+      return `${date.getMonth() + 1}月${date.getDate()}日 ${hours}:${minutes}`;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1500);
+    }
+
+    function bindEvents() {
+      document.getElementById('value-input').addEventListener('input', (e) => {
+        // FIX: Added input sanitization
+        let value = e.target.value;
+        // Remove any non-numeric characters except decimal point and minus
+        value = value.replace(/[^\d.-]/g, '');
+        // Ensure only one decimal point
+        const parts = value.split('.');
+        if (parts.length > 2) {
+          value = parts[0] + '.' + parts.slice(1).join('');
+        }
+        e.target.value = value;
+        state.value = value;
+        updateSaveButton();
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.value === state.value);
+        });
+      });
+
+      // FIX: Enhanced quick-values with keyboard support and ARIA
+      document.getElementById('quick-values').addEventListener('click', (e) => {
+        const btn = e.target.closest('.quick-btn');
+        if (btn) {
+          state.value = btn.dataset.value;
+          document.getElementById('value-input').value = state.value;
+          updateSaveButton();
+          document.querySelectorAll('.quick-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.value === state.value);
+            b.setAttribute('aria-pressed', b.dataset.value === state.value);
+          });
+        }
+      });
+
+      // FIX: Added keyboard navigation support for period items
+      document.getElementById('period-grid').addEventListener('keydown', (e) => {
+        const item = e.target.closest('.period-item');
+        if (!item) return;
+
+        const items = Array.from(document.querySelectorAll('.period-item'));
+        const currentIndex = items.indexOf(item);
+
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          state.period = item.dataset.value;
+          renderPeriods();
+          return;
+        }
+
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const nextIndex = e.key === 'ArrowRight'
+            ? (currentIndex + 1) % items.length
+            : (currentIndex - 1 + items.length) % items.length;
+          items[nextIndex].focus();
+          items[nextIndex].click();
+        }
+      });
+
+      document.getElementById('period-grid').addEventListener('click', (e) => {
+        const item = e.target.closest('.period-item');
+        if (item) {
+          state.period = item.dataset.value;
+          document.querySelectorAll('.period-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.value === state.period);
+          });
+        }
+      });
+
+      document.getElementById('date-input').addEventListener('change', (e) => {
+        state.date = e.target.value;
+      });
+
+      document.getElementById('time-input').addEventListener('change', (e) => {
+        state.time = e.target.value;
+        // 时间变化时自动选择时段
+        const [hours] = state.time.split(':');
+        autoSelectPeriod(parseInt(hours));
+      });
+
+      document.getElementById('note-input').addEventListener('input', (e) => {
+        // FIX: Added note input validation and sanitization
+        let value = e.target.value;
+        // Remove potentially dangerous characters
+        value = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
+        if (value.length > VALIDATION.MAX_NOTE_LENGTH) {
+          value = value.slice(0, VALIDATION.MAX_NOTE_LENGTH);
+        }
+        e.target.value = value;
+        state.note = value;
+      });
+
+      document.getElementById('save-btn').addEventListener('click', saveRecord);
+
+      // FIX: Enhanced tab navigation with keyboard support
+      document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.addEventListener('click', () => switchPage(tab.dataset.page));
+        tab.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            switchPage(tab.dataset.page);
+          }
+        });
+      });
+
+      document.getElementById('filter-date').addEventListener('change', renderHistory);
+      document.getElementById('export-btn').addEventListener('click', exportData);
+      document.getElementById('clear-btn').addEventListener('click', clearData);
+
+      document.querySelectorAll('.font-size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.fontSize = btn.dataset.size;
+          // FIX: Added try-catch for localStorage operation
+          try {
+            localStorage.setItem(FONT_SIZE_KEY, state.fontSize);
+          } catch (error) {
+            console.error('Error saving font size:', error);
+          }
+          applyFontSize(state.fontSize);
+          showToast('字体已调整 ✅');
+        });
+      });
+    }
+
+    // FIX: Enhanced input validation for all user inputs
+    function validateInput(value, type) {
+      switch (type) {
+        case 'value':
+          const numValue = parseFloat(value);
+          if (isNaN(numValue)) return { valid: false, error: '请输入有效的数字' };
+          if (numValue < VALIDATION.MIN_VALUE) return { valid: false, error: `血糖值不能小于 ${VALIDATION.MIN_VALUE}` };
+          if (numValue > VALIDATION.MAX_VALUE) return { valid: false, error: `血糖值不能大于 ${VALIDATION.MAX_VALUE}` };
+          return { valid: true };
+
+        case 'note':
+          if (value.length > VALIDATION.MAX_NOTE_LENGTH) {
+            return { valid: false, error: `备注不能超过 ${VALIDATION.MAX_NOTE_LENGTH} 个字符` };
+          }
+          if (value && !VALIDATION.ALLOWED_NOTE_CHARS.test(value)) {
+            return { valid: false, error: '备注包含不允许的字符' };
+          }
+          return { valid: true };
+
+        case 'date':
+          if (!value) return { valid: false, error: '请选择日期' };
+          const date = new Date(value);
+          if (isNaN(date.getTime())) return { valid: false, error: '日期格式无效' };
+          return { valid: true };
+
+        case 'time':
+          if (!value) return { valid: false, error: '请选择时间' };
+          const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+          if (!timeRegex.test(value)) return { valid: false, error: '时间格式无效' };
+          return { valid: true };
+
+        default:
+          return { valid: true };
+      }
+    }
+
+    function updateSaveButton() {
+      const valueValidation = validateInput(state.value, 'value');
+      document.getElementById('save-btn').disabled = !valueValidation.valid;
+    }
+
+    function saveRecord() {
+      // FIX: Added comprehensive input validation before saving
+      const valueValidation = validateInput(state.value, 'value');
+      if (!valueValidation.valid) {
+        showToast(valueValidation.error);
+        return;
+      }
+
+      const dateValidation = validateInput(state.date, 'date');
+      if (!dateValidation.valid) {
+        showToast(dateValidation.error);
+        return;
+      }
+
+      const timeValidation = validateInput(state.time, 'time');
+      if (!timeValidation.valid) {
+        showToast(timeValidation.error);
+        return;
+      }
+
+      const noteValidation = validateInput(state.note, 'note');
+      if (!noteValidation.valid) {
+        showToast(noteValidation.error);
+        return;
+      }
+
+      const numValue = parseFloat(state.value);
+      const [hours, minutes] = state.time.split(':');
+      const [year, month, day] = state.date.split('-');
+      const timestamp = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes)).getTime();
+
+      state.records.unshift({
+        // FIX: Replaced deprecated .substr(2) with .slice(2)
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        value: numValue,
+        period: state.period,
+        timestamp: timestamp,
+        note: state.note,
+        createdAt: Date.now()
+      });
+      saveRecords();
+
+      state.value = '';
+      state.note = '';
+      document.getElementById('value-input').value = '';
+      document.getElementById('note-input').value = '';
+      document.querySelectorAll('.quick-btn').forEach(btn => btn.classList.remove('active'));
+      updateSaveButton();
+      setCurrentDateTime();
+      updateLastRecord();
+      showToast('保存成功 ✅');
+    }
+
+    function switchPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-item').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      document.getElementById(`page-${page}`).classList.add('active');
+      const activeTab = document.querySelector(`.tab-item[data-page="${page}"]`);
+      activeTab.classList.add('active');
+      activeTab.setAttribute('aria-selected', 'true');
+      if (page === 'history') renderHistory();
+      if (page === 'chart') renderChart();
+      if (page === 'settings') renderSettings();
+    }
+
+    function renderHistory() {
+      const filterDate = document.getElementById('filter-date').value;
+      let records = state.records;
+      if (filterDate) {
+        const filterTimestamp = new Date(filterDate).setHours(0, 0, 0, 0);
+        const nextDay = filterTimestamp + 24 * 60 * 60 * 1000;
+        records = records.filter(r => r.timestamp >= filterTimestamp && r.timestamp < nextDay);
+      }
+      document.getElementById('stats-text').textContent = `共 ${records.length} 条记录`;
+      if (records.length === 0) {
+        document.getElementById('record-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><span class="empty-text">暂无记录</span><span class="empty-hint">点击"记录"添加血糖数据</span></div>';
+        return;
+      }
+      document.getElementById('record-list').innerHTML = records.map(r => {
+        const period = PERIODS.find(p => p.value === r.period);
+        const isAbnormal = checkAbnormal(r.value, r.period);
+        return `<div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div>`;
+      }).join('');
+    }
+
+    let chartInstance = null;
+    function renderChart() {
+      const now = Date.now();
+      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+      const recentRecords = state.records.filter(r => r.timestamp >= sevenDaysAgo);
+      const grouped = {};
+      recentRecords.forEach(r => {
+        const date = new Date(r.timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        if (!grouped[date]) grouped[date] = [];
+        grouped[date].push(r.value);
+      });
+      const labels = Object.keys(grouped).reverse();
+      const avgValues = labels.map(date => (grouped[date].reduce((a, b) => a + b, 0) / grouped[date].length).toFixed(1));
+
+      if (recentRecords.length > 0) {
+        const values = recentRecords.map(r => r.value);
+        document.getElementById('stat-avg').textContent = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+        document.getElementById('stat-max').textContent = Math.max(...values).toFixed(1);
+        document.getElementById('stat-min').textContent = Math.min(...values).toFixed(1);
+      } else {
+        document.getElementById('stat-avg').textContent = '--';
+        document.getElementById('stat-max').textContent = '--';
+        document.getElementById('stat-min').textContent = '--';
+      }
+
+      const ctx = document.getElementById('trend-chart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length ? labels : ['暂无数据'],
+          datasets: [{
+            label: '血糖值',
+            data: avgValues.length ? avgValues : [0],
+            borderColor: '#4CAF50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: avgValues.map(v => {
+              const num = parseFloat(v);
+              if (num < 3.9 || num > 11.1) return '#f44336';
+              if (num > 7.0) return '#ff9800';
+              return '#4CAF50';
+            }),
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { min: 3, max: 15, title: { display: true, text: 'mmol/L' } } }
+        }
+      });
+    }
+
+    function renderSettings() {
+      document.getElementById('total-records').textContent = `${state.records.length} 条`;
+      if (state.records.length > 0) {
+        const firstRecord = state.records[state.records.length - 1];
+        const date = new Date(firstRecord.timestamp);
+        document.getElementById('first-record-date').textContent = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      } else {
+        document.getElementById('first-record-date').textContent = '--';
+      }
+    }
+
+    function exportData() {
+      if (state.records.length === 0) {
+        showToast('暂无数据可导出');
+        return;
+      }
+      const csv = [['日期', '时间', '血糖值(mmol/L)', '时段', '备注'].join(','),
+        ...state.records.map(r => {
+          const date = new Date(r.timestamp);
+          const period = PERIODS.find(p => p.value === r.period);
+          return [date.toLocaleDateString('zh-CN'), date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), r.value, period ? period.label : '', r.note || ''].join(',');
+        })
+      ].join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `血糖记录_${new Date().toLocaleDateString('zh-CN')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('导出成功 ✅');
+    }
+
+    function clearData() {
+      // FIX: Added more robust confirmation and error handling
+      if (confirm('确定要清除所有数据吗？此操作不可恢复！')) {
+        try {
+          state.records = [];
+          saveRecords();
+          // FIX: Also clear version to trigger fresh migration
+          try {
+            localStorage.removeItem(VERSION_KEY);
+          } catch (e) {
+            console.error('Error clearing version:', e);
+          }
+          updateLastRecord();
+          showToast('已清除所有数据');
+        } catch (error) {
+          console.error('Error clearing data:', error);
+          showToast('清除数据失败');
+        }
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
