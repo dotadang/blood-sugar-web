@@ -182,6 +182,26 @@
       top: 0;
       z-index: 10;
     }
+
+    .date-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 8px 8px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 5;
+    }
+    .date-title {
+      font-size: var(--font-lg);
+      font-weight: 600;
+      color: var(--text);
+    }
+    .date-count {
+      font-size: calc(12px * var(--font-scale));
+      color: var(--text-secondary);
+    }
     .filter-bar input {
       padding: 8px 12px;
       background: var(--bg);
@@ -425,10 +445,15 @@
       <div class="setting-left"><span class="setting-icon">📅</span><div><div class="setting-title">首条记录</div><div class="setting-desc">开始记录的日期</div></div></div>
       <div class="setting-right" id="first-record-date">--</div>
     </div>
-    <div class="setting-item">
+    <div class="setting-item" id="backup-btn" style="cursor: pointer;">
       <div class="setting-left"><span class="setting-icon">💾</span><div><div class="setting-title">数据备份</div><div class="setting-desc">导出所有数据到本地</div></div></div>
       <div class="setting-right">›</div>
     </div>
+    <div class="setting-item" id="import-btn" style="cursor: pointer;">
+      <div class="setting-left"><span class="setting-icon">📥</span><div><div class="setting-title">数据导入</div><div class="setting-desc">从备份文件恢复数据</div></div></div>
+      <div class="setting-right">›</div>
+    </div>
+    <input type="file" id="import-file" accept=".csv" style="display: none;" />
     <!-- FIX: Added ARIA label for clear data button -->
     <button class="btn-export btn-danger" id="clear-btn" aria-label="清除所有记录数据">🗑️ 清除所有数据</button>
   </div>
@@ -610,7 +635,7 @@
       const day = String(now.getDate()).padStart(2, '0');
       const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
       document.getElementById('today-date').textContent = `${year}年${month}月${day}日 ${weekDays[now.getDay()]}`;
-      document.getElementById('filter-date').value = `${year}-${month}-${day}`;
+      // 不设置筛选日期默认值，让历史记录默认显示所有数据
     }
 
     function updateLastRecord() {
@@ -759,6 +784,9 @@
 
       document.getElementById('filter-date').addEventListener('change', renderHistory);
       document.getElementById('export-btn').addEventListener('click', exportData);
+      document.getElementById('backup-btn').addEventListener('click', exportData);
+      document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+      document.getElementById('import-file').addEventListener('change', importData);
       document.getElementById('clear-btn').addEventListener('click', clearData);
 
       document.querySelectorAll('.font-size-btn').forEach(btn => {
@@ -898,11 +926,48 @@
         document.getElementById('record-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><span class="empty-text">暂无记录</span><span class="empty-hint">点击"记录"添加血糖数据</span></div>';
         return;
       }
-      document.getElementById('record-list').innerHTML = records.map(r => {
-        const period = PERIODS.find(p => p.value === r.period);
-        const isAbnormal = checkAbnormal(r.value, r.period);
-        return `<div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div>`;
-      }).join('');
+
+      // 按测量日期分组
+      const groupedByDate = {};
+      records.forEach(r => {
+        const date = new Date(r.timestamp);
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+        groupedByDate[dateKey].push(r);
+      });
+
+      // 日期按倒序排列，每组内按时间倒序排列
+      const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
+
+      let html = '';
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+      sortedDates.forEach(dateKey => {
+        // 格式化日期标题
+        const [year, month, day] = dateKey.split('-');
+        let dateTitle = `${month}月${day}日`;
+        if (dateKey === todayKey) dateTitle = `今天 (${month}月${day}日)`;
+        else if (dateKey === yesterdayKey) dateTitle = `昨天 (${month}月${day}日)`;
+        else dateTitle = `${year}年${month}月${day}日`;
+
+        // 计算该日期的平均值
+        const dayRecords = groupedByDate[dateKey].sort((a, b) => b.timestamp - a.timestamp);
+        const avgValue = (dayRecords.reduce((sum, r) => sum + r.value, 0) / dayRecords.length).toFixed(1);
+
+        html += `<div class="date-header"><span class="date-title">${dateTitle}</span><span class="date-count">平均 ${avgValue} mmol/L · ${dayRecords.length} 条</span></div>`;
+
+        html += dayRecords.map(r => {
+          const period = PERIODS.find(p => p.value === r.period);
+          const isAbnormal = checkAbnormal(r.value, r.period);
+          return `<div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div>`;
+        }).join('');
+      });
+
+      document.getElementById('record-list').innerHTML = html;
     }
 
     let chartInstance = null;
@@ -910,14 +975,25 @@
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
       const recentRecords = state.records.filter(r => r.timestamp >= sevenDaysAgo);
+
+      // 按测量日期分组（使用标准日期格式确保正确排序）
       const grouped = {};
       recentRecords.forEach(r => {
-        const date = new Date(r.timestamp).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-        if (!grouped[date]) grouped[date] = [];
-        grouped[date].push(r.value);
+        const date = new Date(r.timestamp);
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push(r.value);
       });
-      const labels = Object.keys(grouped).reverse();
-      const avgValues = labels.map(date => (grouped[date].reduce((a, b) => a + b, 0) / grouped[date].length).toFixed(1));
+
+      // 按日期正序排列（从早到晚）
+      const sortedDates = Object.keys(grouped).sort();
+
+      // 生成显示标签和平均值
+      const labels = sortedDates.map(dateKey => {
+        const [year, month, day] = dateKey.split('-');
+        return `${month}/${day}`;
+      });
+      const avgValues = sortedDates.map(dateKey => (grouped[dateKey].reduce((a, b) => a + b, 0) / grouped[dateKey].length).toFixed(1));
 
       if (recentRecords.length > 0) {
         const values = recentRecords.map(r => r.value);
@@ -992,6 +1068,98 @@
       a.click();
       URL.revokeObjectURL(url);
       showToast('导出成功 ✅');
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split('\n').filter(line => line.trim());
+
+          // 跳过表头，从第二行开始解析
+          if (lines.length < 2) {
+            showToast('文件格式错误：没有数据');
+            return;
+          }
+
+          const newRecords = [];
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // 处理 CSV 中的逗号（简单的分割，不处理带引号的字段）
+            const parts = line.split(',');
+            if (parts.length < 4) continue;
+
+            const [dateStr, timeStr, valueStr, periodLabel, note] = parts.map(p => p.trim());
+
+            // 解析日期和时间
+            const date = new Date(dateStr + ' ' + timeStr);
+            if (isNaN(date.getTime())) continue;
+
+            // 解析血糖值
+            const value = parseFloat(valueStr);
+            if (isNaN(value)) continue;
+
+            // 将时段标签转换为 value
+            const period = PERIODS.find(p => p.label === periodLabel);
+            if (!period) continue;
+
+            newRecords.push({
+              id: Date.now().toString(36) + Math.random().toString(36).slice(2) + i,
+              value: value,
+              period: period.value,
+              timestamp: date.getTime(),
+              note: note || '',
+              createdAt: Date.now()
+            });
+          }
+
+          if (newRecords.length === 0) {
+            showToast('未找到有效的记录数据');
+            return;
+          }
+
+          // 确认导入
+          if (!confirm(`将导入 ${newRecords.length} 条记录，这将覆盖现有数据。确定继续吗？`)) {
+            return;
+          }
+
+          // 覆盖本地数据
+          state.records = newRecords;
+          saveRecords();
+          updateLastRecord();
+
+          // 如果当前在历史或图表页面，重新渲染
+          const historyPage = document.getElementById('page-history');
+          if (historyPage.classList.contains('active')) {
+            renderHistory();
+          }
+          const chartPage = document.getElementById('page-chart');
+          if (chartPage.classList.contains('active')) {
+            renderChart();
+          }
+          renderSettings();
+
+          showToast(`导入成功 ✅ 共 ${newRecords.length} 条记录`);
+        } catch (error) {
+          console.error('Import error:', error);
+          showToast('导入失败：文件格式错误');
+        }
+      };
+
+      reader.onerror = function() {
+        showToast('文件读取失败');
+      };
+
+      reader.readAsText(file);
+
+      // 清空文件选择，允许重复选择同一文件
+      event.target.value = '';
     }
 
     function clearData() {
