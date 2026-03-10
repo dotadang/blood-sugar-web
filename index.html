@@ -231,8 +231,7 @@
       transition: opacity 0.2s ease;
       opacity: 0;
     }
-    .swipe-container:has(.record-item[style*="translateX"]) .swipe-actions,
-    .swipe-container:has(.record-item.swiping) .swipe-actions {
+    .swipe-container.swiped .swipe-actions {
       opacity: 1;
       pointer-events: auto;
     }
@@ -281,8 +280,7 @@
       transition: transform 0.15s ease-out, box-shadow 0.2s ease;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
-    .swipe-container:has(.record-item.swiping) .record-item,
-    .swipe-container:has(.record-item[style*="translateX"]) .record-item {
+    .swipe-container.swiped .record-item {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
     .record-left { text-align: center; min-width: 70px; }
@@ -1257,14 +1255,19 @@
       let currentX = 0;
       let isDragging = false;
       let currentElement = null;
+      let currentContainer = null;
       let deleteWidth = 80;
 
       // 关闭所有打开的滑动项
       function closeAllSwipes() {
-        const openItems = container.querySelectorAll('.record-item[style*="transform"]');
-        openItems.forEach(item => {
-          item.style.transform = 'translateX(0)';
-          item.classList.remove('swiping');
+        const swipedContainers = container.querySelectorAll('.swipe-container.swiped');
+        swipedContainers.forEach(swipeContainer => {
+          const recordItem = swipeContainer.querySelector('.record-item');
+          if (recordItem) {
+            recordItem.style.transform = 'translateX(0)';
+            recordItem.classList.remove('swiping');
+          }
+          swipeContainer.classList.remove('swiped');
         });
       }
 
@@ -1283,9 +1286,11 @@
 
         isDragging = true;
         currentElement = recordItem;
+        currentContainer = swipeContainer;
         startX = e.touches[0].clientX;
         currentX = startX;
         recordItem.classList.add('swiping');
+        swipeContainer.classList.add('swiped');
       }, { passive: true });
 
       // 触摸移动
@@ -1304,20 +1309,23 @@
 
       // 触摸结束
       container.addEventListener('touchend', (e) => {
-        if (!isDragging || !currentElement) return;
+        if (!isDragging || !currentElement || !currentContainer) return;
 
         const diff = currentX - startX;
 
-        // 如果滑动超过一半，自动打开删除按钮
-        if (diff < -deleteWidth / 2) {
+        // 如果滑动超过40px，保持打开状态，否则关闭
+        if (diff < -40) {
           currentElement.style.transform = `translateX(-${deleteWidth}px)`;
+          // 保持 .swiped 类
         } else {
           currentElement.style.transform = 'translateX(0)';
+          currentContainer.classList.remove('swiped');
         }
 
         currentElement.classList.remove('swiping');
         isDragging = false;
         currentElement = null;
+        currentContainer = null;
       }, { passive: true });
 
       // 鼠标事件支持
@@ -1335,9 +1343,11 @@
 
         isDragging = true;
         currentElement = recordItem;
+        currentContainer = swipeContainer;
         startX = e.clientX;
         currentX = startX;
         recordItem.classList.add('swiping');
+        swipeContainer.classList.add('swiped');
         e.preventDefault();
       });
 
@@ -1356,28 +1366,33 @@
       });
 
       container.addEventListener('mouseup', (e) => {
-        if (!isDragging || !currentElement) return;
+        if (!isDragging || !currentElement || !currentContainer) return;
 
         const diff = currentX - startX;
 
-        // 如果滑动超过一半，自动打开删除按钮
-        if (diff < -deleteWidth / 2) {
+        // 如果滑动超过40px，保持打开状态，否则关闭
+        if (diff < -40) {
           currentElement.style.transform = `translateX(-${deleteWidth}px)`;
+          // 保持 .swiped 类
         } else {
           currentElement.style.transform = 'translateX(0)';
+          currentContainer.classList.remove('swiped');
         }
 
         currentElement.classList.remove('swiping');
         isDragging = false;
         currentElement = null;
+        currentContainer = null;
       });
 
       container.addEventListener('mouseleave', (e) => {
-        if (isDragging && currentElement) {
+        if (isDragging && currentElement && currentContainer) {
           currentElement.style.transform = 'translateX(0)';
           currentElement.classList.remove('swiping');
+          currentContainer.classList.remove('swiped');
           isDragging = false;
           currentElement = null;
+          currentContainer = null;
         }
       });
     }
