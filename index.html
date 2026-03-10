@@ -223,7 +223,9 @@
       bottom: 0;
       display: flex;
       align-items: center;
-      z-index: 1;
+      z-index: 10;
+      width: 120px;
+      justify-content: flex-end;
     }
     .swipe-delete {
       background: var(--danger);
@@ -1004,7 +1006,7 @@
         html += dayRecords.map(r => {
           const period = PERIODS.find(p => p.value === r.period);
           const isAbnormal = checkAbnormal(r.value, r.period);
-          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord(${r.id})">🗑️ 删除</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
+          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord('${r.id}')">🗑️ 删除</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
         }).join('');
       });
 
