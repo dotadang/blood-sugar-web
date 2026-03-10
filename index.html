@@ -218,33 +218,42 @@
     }
     .swipe-actions {
       position: absolute;
-      right: 0;
+      right: -80px;
       top: 0;
       bottom: 0;
       display: flex;
       align-items: center;
       z-index: 10;
-      width: 120px;
-      justify-content: flex-end;
+      width: 80px;
+      justify-content: center;
+      padding: 8px;
     }
     .swipe-delete {
-      background: var(--danger);
+      background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
       color: white;
       border: none;
-      padding: 16px 24px;
-      font-size: var(--font-base);
-      font-weight: 500;
+      min-width: 64px;
+      height: 64px;
+      font-size: var(--font-xl);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      transition: background 0.2s;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+      font-weight: 600;
     }
     .swipe-delete:hover {
-      background: #d32f2f;
+      background: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%);
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
     }
     .swipe-delete:active {
-      background: #b71c1c;
+      background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+      transform: scale(0.95);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
     }
     .record-item {
       display: flex;
@@ -254,12 +263,18 @@
       border-radius: 12px;
       position: relative;
       transform: translateX(0);
-      transition: transform 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       touch-action: pan-y;
       user-select: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     .record-item.swiping {
       transition: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .swipe-container:has(.record-item.swiping) .record-item,
+    .swipe-container:has(.record-item[style*="translateX(-80px)"]) .record-item {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     .record-left { text-align: center; min-width: 70px; }
     .record-value { font-size: var(--font-2xl); font-weight: bold; }
@@ -1006,7 +1021,7 @@
         html += dayRecords.map(r => {
           const period = PERIODS.find(p => p.value === r.period);
           const isAbnormal = checkAbnormal(r.value, r.period);
-          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord('${r.id}')">🗑️ 删除</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
+          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord('${r.id}')" aria-label="删除">🗑️</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
         }).join('');
       });
 
@@ -1233,7 +1248,7 @@
       let currentX = 0;
       let isDragging = false;
       let currentElement = null;
-      let deleteWidth = 100;
+      let deleteWidth = 80;
 
       // 关闭所有打开的滑动项
       function closeAllSwipes() {
