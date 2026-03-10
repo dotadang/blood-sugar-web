@@ -213,47 +213,55 @@
 
     .swipe-container {
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       margin-bottom: 10px;
     }
     .swipe-actions {
       position: absolute;
-      right: -80px;
+      right: -100px;
       top: 0;
       bottom: 0;
       display: flex;
       align-items: center;
       z-index: 10;
-      width: 80px;
+      width: 100px;
       justify-content: center;
-      padding: 8px;
+      padding: 12px;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      opacity: 0;
+    }
+    .swipe-container:has(.record-item[style*="translateX"]) .swipe-actions,
+    .swipe-container:has(.record-item.swiping) .swipe-actions {
+      opacity: 1;
+      pointer-events: auto;
     }
     .swipe-delete {
       background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
       color: white;
       border: none;
-      min-width: 64px;
-      height: 64px;
-      font-size: var(--font-xl);
+      width: 72px;
+      height: 72px;
+      font-size: 28px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      transition: all 0.2s ease;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4);
       font-weight: 600;
+      pointer-events: auto;
     }
     .swipe-delete:hover {
       background: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%);
-      transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5);
     }
     .swipe-delete:active {
       background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
-      transform: scale(0.95);
-      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+      transform: scale(0.92);
+      box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
     }
     .record-item {
       display: flex;
@@ -263,18 +271,19 @@
       border-radius: 12px;
       position: relative;
       transform: translateX(0);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
       touch-action: pan-y;
       user-select: none;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      z-index: 5;
     }
     .record-item.swiping {
-      transition: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s ease-out, box-shadow 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
     .swipe-container:has(.record-item.swiping) .record-item,
-    .swipe-container:has(.record-item[style*="translateX(-80px)"]) .record-item {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    .swipe-container:has(.record-item[style*="translateX"]) .record-item {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
     .record-left { text-align: center; min-width: 70px; }
     .record-value { font-size: var(--font-2xl); font-weight: bold; }
