@@ -211,13 +211,53 @@
     }
     .stats-text { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
 
+    .swipe-container {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .swipe-actions {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      z-index: 1;
+    }
+    .swipe-delete {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 16px 24px;
+      font-size: var(--font-base);
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .swipe-delete:hover {
+      background: #d32f2f;
+    }
+    .swipe-delete:active {
+      background: #b71c1c;
+    }
     .record-item {
       display: flex;
       align-items: center;
       padding: 16px;
       background: var(--card);
       border-radius: 12px;
-      margin-bottom: 10px;
+      position: relative;
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+      touch-action: pan-y;
+      user-select: none;
+    }
+    .record-item.swiping {
+      transition: none;
     }
     .record-left { text-align: center; min-width: 70px; }
     .record-value { font-size: var(--font-2xl); font-weight: bold; }
@@ -516,6 +556,7 @@
       setTodayDate();
       updateLastRecord();
       bindEvents();
+      initSwipeDelete();
     }
 
     // FIX: Added try-catch error handling around all localStorage operations
@@ -963,11 +1004,14 @@
         html += dayRecords.map(r => {
           const period = PERIODS.find(p => p.value === r.period);
           const isAbnormal = checkAbnormal(r.value, r.period);
-          return `<div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div>`;
+          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord(${r.id})">🗑️ 删除</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
         }).join('');
       });
 
       document.getElementById('record-list').innerHTML = html;
+
+      // 重新初始化滑动删除功能
+      initSwipeDelete();
     }
 
     let chartInstance = null;
@@ -1160,6 +1204,156 @@
 
       // 清空文件选择，允许重复选择同一文件
       event.target.value = '';
+    }
+
+    // 删除单条记录
+    function deleteRecord(id) {
+      if (!confirm('确定要删除这条记录吗？')) return;
+
+      try {
+        state.records = state.records.filter(r => r.id !== id);
+        saveRecords();
+        updateLastRecord();
+        renderHistory();
+        renderChart();
+        renderSettings();
+        showToast('删除成功');
+      } catch (error) {
+        console.error('Error deleting record:', error);
+        showToast('删除失败');
+      }
+    }
+
+    // 滑动删除功能
+    function initSwipeDelete() {
+      const container = document.getElementById('record-list');
+      let startX = 0;
+      let currentX = 0;
+      let isDragging = false;
+      let currentElement = null;
+      let deleteWidth = 100;
+
+      // 关闭所有打开的滑动项
+      function closeAllSwipes() {
+        const openItems = container.querySelectorAll('.record-item[style*="transform"]');
+        openItems.forEach(item => {
+          item.style.transform = 'translateX(0)';
+          item.classList.remove('swiping');
+        });
+      }
+
+      // 触摸开始
+      container.addEventListener('touchstart', (e) => {
+        const swipeContainer = e.target.closest('.swipe-container');
+        if (!swipeContainer) return;
+
+        const recordItem = swipeContainer.querySelector('.record-item');
+        if (!recordItem) return;
+
+        // 如果点击的是删除按钮，不处理滑动
+        if (e.target.closest('.swipe-delete')) return;
+
+        closeAllSwipes();
+
+        isDragging = true;
+        currentElement = recordItem;
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        recordItem.classList.add('swiping');
+      }, { passive: true });
+
+      // 触摸移动
+      container.addEventListener('touchmove', (e) => {
+        if (!isDragging || !currentElement) return;
+
+        currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+
+        // 只允许向左滑动
+        if (diff < 0) {
+          const translateX = Math.max(diff, -deleteWidth);
+          currentElement.style.transform = `translateX(${translateX}px)`;
+        }
+      }, { passive: true });
+
+      // 触摸结束
+      container.addEventListener('touchend', (e) => {
+        if (!isDragging || !currentElement) return;
+
+        const diff = currentX - startX;
+
+        // 如果滑动超过一半，自动打开删除按钮
+        if (diff < -deleteWidth / 2) {
+          currentElement.style.transform = `translateX(-${deleteWidth}px)`;
+        } else {
+          currentElement.style.transform = 'translateX(0)';
+        }
+
+        currentElement.classList.remove('swiping');
+        isDragging = false;
+        currentElement = null;
+      }, { passive: true });
+
+      // 鼠标事件支持
+      container.addEventListener('mousedown', (e) => {
+        const swipeContainer = e.target.closest('.swipe-container');
+        if (!swipeContainer) return;
+
+        const recordItem = swipeContainer.querySelector('.record-item');
+        if (!recordItem) return;
+
+        // 如果点击的是删除按钮，不处理滑动
+        if (e.target.closest('.swipe-delete')) return;
+
+        closeAllSwipes();
+
+        isDragging = true;
+        currentElement = recordItem;
+        startX = e.clientX;
+        currentX = startX;
+        recordItem.classList.add('swiping');
+        e.preventDefault();
+      });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDragging || !currentElement) return;
+
+        currentX = e.clientX;
+        const diff = currentX - startX;
+
+        // 只允许向左滑动
+        if (diff < 0) {
+          const translateX = Math.max(diff, -deleteWidth);
+          currentElement.style.transform = `translateX(${translateX}px)`;
+        }
+        e.preventDefault();
+      });
+
+      container.addEventListener('mouseup', (e) => {
+        if (!isDragging || !currentElement) return;
+
+        const diff = currentX - startX;
+
+        // 如果滑动超过一半，自动打开删除按钮
+        if (diff < -deleteWidth / 2) {
+          currentElement.style.transform = `translateX(-${deleteWidth}px)`;
+        } else {
+          currentElement.style.transform = 'translateX(0)';
+        }
+
+        currentElement.classList.remove('swiping');
+        isDragging = false;
+        currentElement = null;
+      });
+
+      container.addEventListener('mouseleave', (e) => {
+        if (isDragging && currentElement) {
+          currentElement.style.transform = 'translateX(0)';
+          currentElement.classList.remove('swiping');
+          isDragging = false;
+          currentElement = null;
+        }
+      });
     }
 
     function clearData() {
