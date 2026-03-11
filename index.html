@@ -990,9 +990,28 @@
 
     function checkAbnormal(value, period) {
       const numValue = parseFloat(value);
-      if (period === 'fasting') return numValue < 3.9 || numValue > 7.0;
-      if (period.includes('after_')) return numValue < 3.9 || numValue > 11.1;
-      return numValue < 3.9 || numValue > 11.1;
+
+      switch (period) {
+        case 'fasting':
+        case 'before_breakfast':
+        case 'before_lunch':
+        case 'before_dinner':
+          return numValue < 3.9 || numValue > 7.0;
+
+        case 'after_breakfast':
+        case 'after_lunch':
+        case 'after_dinner':
+          return numValue < 3.9 || numValue > 10.0;
+
+        case 'before_sleep':
+          return numValue < 3.9 || numValue > 8.0;
+
+        case 'random':
+          return numValue < 3.9 || numValue > 11.1;
+
+        default:
+          return numValue < 3.9 || numValue > 11.1;
+      }
     }
 
     function formatTime(timestamp) {
