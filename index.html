@@ -991,7 +991,7 @@
     function checkAbnormal(value, period) {
       const numValue = parseFloat(value);
       if (period === 'fasting') return numValue < 3.9 || numValue > 7.0;
-      if (period.includes('after_')) return numValue > 11.1;
+      if (period.includes('after_')) return numValue < 3.9 || numValue > 11.1;
       return numValue < 3.9 || numValue > 11.1;
     }
 
