@@ -407,7 +407,7 @@
       <div class="label">血糖值</div>
       <div class="value-input">
         <!-- FIX: Added ARIA label, min/max validation, step validation -->
-        <input type="number" step="0.1" min="0" max="40" class="input-number" id="value-input" placeholder="0.0" aria-label="血糖值输入" inputmode="decimal" />
+        <input type="text" class="input-number" id="value-input" placeholder="0.0" aria-label="血糖值输入" inputmode="decimal" autocomplete="off" />
         <span class="input-unit">mmol/L</span>
       </div>
       <div class="quick-values" id="quick-values" role="group" aria-label="快速选择常用血糖值"></div>
@@ -746,16 +746,20 @@
 
     function bindEvents() {
       document.getElementById('value-input').addEventListener('input', (e) => {
-        // FIX: Added input sanitization
         let value = e.target.value;
-        // Remove any non-numeric characters except decimal point and minus
-        value = value.replace(/[^\d.-]/g, '');
-        // Ensure only one decimal point
-        const parts = value.split('.');
-        if (parts.length > 2) {
-          value = parts[0] + '.' + parts.slice(1).join('');
+        const sanitized = value
+          .replace(/[^\d.]/g, '')
+          .replace(/\.(?=.*\.)/g, '');
+
+        if (sanitized !== value) {
+          const cursor = e.target.selectionStart;
+          const diff = value.length - sanitized.length;
+          e.target.value = sanitized;
+          const nextCursor = Math.max(0, (cursor || 0) - diff);
+          try { e.target.setSelectionRange(nextCursor, nextCursor); } catch (_) {}
+          value = sanitized;
         }
-        e.target.value = value;
+
         state.value = value;
         updateSaveButton();
         document.querySelectorAll('.quick-btn').forEach(btn => {
