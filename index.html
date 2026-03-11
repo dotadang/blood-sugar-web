@@ -224,40 +224,44 @@
       display: flex;
       align-items: center;
       z-index: 1;
-      width: 100px;
+      width: 88px;
       justify-content: center;
-      padding: 12px;
+      padding: 0 12px 0 8px;
       pointer-events: none;
     }
     .swipe-container.swiped .swipe-actions {
       pointer-events: auto;
     }
     .swipe-delete {
-      background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+      background: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%);
       color: white;
       border: none;
-      width: 72px;
-      height: 72px;
-      font-size: 28px;
+      min-width: 60px;
+      height: 40px;
+      padding: 0 14px;
+      font-size: calc(13px * var(--font-scale));
+      line-height: 1;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 50%;
-      box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4);
+      transition: all 0.2s ease;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(244, 67, 54, 0.25);
       font-weight: 600;
+      letter-spacing: 0.02em;
       pointer-events: auto;
+      white-space: nowrap;
     }
     .swipe-delete:hover {
-      background: linear-gradient(135deg, #ff6b6b 0%, #e53935 100%);
-      transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5);
+      background: linear-gradient(135deg, #ff7a7a 0%, #ef5350 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(244, 67, 54, 0.3);
     }
     .swipe-delete:active {
       background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
-      transform: scale(0.92);
-      box-shadow: 0 2px 10px rgba(244, 67, 54, 0.3);
+      transform: scale(0.96);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.22);
     }
     .record-item {
       display: flex;
@@ -1025,7 +1029,7 @@
         html += dayRecords.map(r => {
           const period = PERIODS.find(p => p.value === r.period);
           const isAbnormal = checkAbnormal(r.value, r.period);
-          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord('${r.id}')" aria-label="删除">🗑️</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
+          return `<div class="swipe-container" data-id="${r.id}"><div class="swipe-actions"><button class="swipe-delete" onclick="deleteRecord('${r.id}')" aria-label="删除">删除</button></div><div class="record-item"><div class="record-left"><div class="record-value ${isAbnormal ? 'abnormal' : ''}">${r.value}</div><div class="record-unit">mmol/L</div></div><div class="record-center"><div class="record-period">${period ? period.label : ''}</div><div class="record-time">${formatTime(r.timestamp)}</div>${r.note ? `<div class="record-note">${r.note}</div>` : ''}</div><div class="record-right"><div class="status-dot ${isAbnormal ? 'abnormal' : 'normal'}"></div></div></div></div>`;
         }).join('');
       });
 
@@ -1311,6 +1315,7 @@
         const diff = currentX - startX;
 
         // 如果滑动超过40px，保持打开状态，否则关闭
+
         if (diff < -40) {
           currentElement.style.transform = `translateX(-${deleteWidth}px)`;
           // 保持 .swiped 类
