@@ -17,14 +17,14 @@
     }
 
     :root {
-      --primary: #2f9e74;
-      --primary-dark: #23785a;
-      --primary-soft: #dff5eb;
-      --primary-soft-2: #eef9f4;
+      --primary: #2a9d6e;
+      --primary-dark: #1e7a55;
+      --primary-soft: #e0f5ec;
+      --primary-soft-2: #f0faf5;
       --danger: #e35d6a;
       --danger-soft: #fff1f3;
       --warning: #f0a43a;
-      --success: #2f9e74;
+      --success: #2a9d6e;
       --bg: #f3f6f8;
       --bg-accent: #fbfdff;
       --card: rgba(255, 255, 255, 0.92);
@@ -45,6 +45,36 @@
       --font-xl: calc(20px * var(--font-scale));
       --font-2xl: calc(24px * var(--font-scale));
       --font-3xl: calc(32px * var(--font-scale));
+      --input-bg: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,251,0.92) 100%);
+      --glass-bg: rgba(255, 255, 255, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.78);
+      --inset-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+    }
+
+    [data-theme="dark"] {
+      --primary: #3db882;
+      --primary-dark: #2ea06e;
+      --primary-soft: rgba(61, 184, 130, 0.15);
+      --primary-soft-2: rgba(61, 184, 130, 0.08);
+      --danger: #f47983;
+      --danger-soft: rgba(244, 121, 131, 0.12);
+      --warning: #f5b74e;
+      --success: #3db882;
+      --bg: #0f1419;
+      --bg-accent: #161c22;
+      --card: rgba(30, 38, 46, 0.92);
+      --card-strong: #1e262e;
+      --text: #e4e8ec;
+      --text-secondary: #8899aa;
+      --text-muted: #5c6e7e;
+      --border: rgba(148, 163, 184, 0.1);
+      --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.4);
+      --input-bg: linear-gradient(180deg, rgba(30, 38, 46, 0.96) 0%, rgba(22, 28, 34, 0.92) 100%);
+      --glass-bg: rgba(30, 38, 46, 0.72);
+      --glass-border: rgba(50, 60, 72, 0.78);
+      --inset-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
 
     .font-large { --font-scale: 1.2; }
@@ -54,13 +84,20 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background:
-        radial-gradient(circle at top, rgba(47, 158, 116, 0.16), transparent 34%),
+        radial-gradient(circle at top, rgba(42, 157, 110, 0.16), transparent 34%),
         linear-gradient(180deg, #f8fbfd 0%, var(--bg) 24%, #eef3f7 100%);
       color: var(--text);
       min-height: 100vh;
       padding: 0 0 calc(96px + env(safe-area-inset-bottom));
       font-size: var(--font-base);
       line-height: 1.45;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    [data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top, rgba(61, 184, 130, 0.1), transparent 34%),
+        linear-gradient(180deg, #0f1419 0%, #0f1419 24%, #131920 100%);
     }
 
     body::before {
@@ -70,21 +107,50 @@
       pointer-events: none;
       background:
         radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.9), transparent 22%),
-        radial-gradient(circle at 80% 10%, rgba(47, 158, 116, 0.08), transparent 24%);
+        radial-gradient(circle at 80% 10%, rgba(42, 157, 110, 0.08), transparent 24%);
       z-index: -1;
+      transition: background 0.4s ease;
+    }
+
+    [data-theme="dark"] body::before {
+      background:
+        radial-gradient(circle at 20% 15%, rgba(30, 38, 46, 0.9), transparent 22%),
+        radial-gradient(circle at 80% 10%, rgba(61, 184, 130, 0.06), transparent 24%);
     }
 
     .page {
       display: none;
       padding: 10px 12px 0;
-      animation: fadeIn 0.24s ease;
       max-width: 760px;
       margin: 0 auto;
     }
-    .page.active { display: block; }
+    .page.active {
+      display: block;
+      animation: pageEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+    @keyframes pageEnter {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Stagger card animations */
+    .page.active .card,
+    .page.active .setting-item,
+    .page.active .settings-group,
+    .page.active .stat-card {
+      animation: cardStagger 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .page.active > :nth-child(2) { animation-delay: 0.03s; }
+    .page.active > :nth-child(3) { animation-delay: 0.06s; }
+    .page.active > :nth-child(4) { animation-delay: 0.09s; }
+    .page.active > :nth-child(5) { animation-delay: 0.12s; }
+    .page.active > :nth-child(6) { animation-delay: 0.15s; }
+    .page.active > :nth-child(7) { animation-delay: 0.18s; }
+    .page.active > :nth-child(8) { animation-delay: 0.21s; }
+
+    @keyframes cardStagger {
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -92,11 +158,12 @@
       background: var(--card);
       backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
-      border: 1px solid rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--glass-border);
       border-radius: var(--radius-md);
       padding: 12px;
       margin-bottom: 6px;
       box-shadow: var(--shadow-sm);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
 
     .label {
@@ -121,9 +188,10 @@
       min-height: 36px;
       padding: 0 14px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.82);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
       box-shadow: 0 10px 30px rgba(27, 39, 51, 0.08);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
     .header .subtitle {
       font-size: var(--font-base);
@@ -139,18 +207,18 @@
       font-weight: 700;
       text-align: center;
       border: 1.5px solid transparent;
-      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,251,0.92) 100%);
+      background: var(--input-bg);
       border-radius: 16px;
       padding: 12px 8px;
       outline: none;
       color: var(--text);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.88), 0 8px 20px rgba(27, 39, 51, 0.05);
-      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      box-shadow: var(--inset-shadow), 0 8px 20px rgba(27, 39, 51, 0.05);
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, background 0.4s ease;
     }
-    .input-number::placeholder { color: #b3c0cc; }
+    .input-number::placeholder { color: var(--text-muted); }
     .input-number:focus {
-      border-color: rgba(47, 158, 116, 0.36);
-      box-shadow: 0 0 0 4px rgba(47, 158, 116, 0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+      border-color: rgba(42, 157, 110, 0.36);
+      box-shadow: 0 0 0 4px rgba(42, 157, 110, 0.12), var(--inset-shadow);
       transform: translateY(-1px);
     }
     .input-unit {
@@ -166,21 +234,22 @@
     .quick-values { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; justify-content: center; }
     .quick-btn {
       padding: 10px 15px;
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--glass-bg);
       border-radius: 999px;
       font-size: var(--font-base);
       cursor: pointer;
       transition: all 0.2s ease;
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.76);
+      border: 1px solid var(--border);
+      box-shadow: var(--inset-shadow);
       color: var(--text-secondary);
       font-weight: 600;
     }
-    .quick-btn:active, .quick-btn.active {
-      background: linear-gradient(135deg, var(--primary) 0%, #49b88d 100%);
+    .quick-btn:active { transform: scale(0.93); transition: transform 0.1s ease; }
+    .quick-btn.active {
+      background: linear-gradient(135deg, var(--primary) 0%, #3fb88a 100%);
       color: white;
       border-color: transparent;
-      box-shadow: 0 10px 20px rgba(47, 158, 116, 0.24);
+      box-shadow: 0 10px 20px rgba(42, 157, 110, 0.24);
       transform: translateY(-1px);
     }
 
@@ -192,17 +261,18 @@
       justify-content: center;
       min-height: 64px;
       padding: 8px 6px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(244,248,251,0.9) 100%);
+      background: var(--input-bg);
       border-radius: 16px;
       cursor: pointer;
       transition: all 0.2s ease;
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+      border: 1px solid var(--border);
+      box-shadow: var(--inset-shadow);
     }
-    .period-item:active, .period-item.active {
-      background: linear-gradient(180deg, #f7fffb 0%, var(--primary-soft) 100%);
-      border-color: rgba(47, 158, 116, 0.35);
-      box-shadow: 0 12px 24px rgba(47, 158, 116, 0.14);
+    .period-item:active { transform: scale(0.96); transition: transform 0.1s ease; }
+    .period-item.active {
+      background: linear-gradient(180deg, var(--primary-soft-2) 0%, var(--primary-soft) 100%);
+      border-color: rgba(42, 157, 110, 0.35);
+      box-shadow: 0 12px 24px rgba(42, 157, 110, 0.14);
       transform: translateY(-1px);
     }
     .period-icon {
@@ -214,11 +284,11 @@
       font-size: calc(14px * var(--font-scale));
       margin-bottom: 6px;
       border-radius: 12px;
-      background: rgba(47, 158, 116, 0.08);
+      background: rgba(42, 157, 110, 0.08);
     }
     .period-text { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); font-weight: 600; }
     .period-item.active .period-text { color: var(--primary); }
-    .period-item.active .period-icon { background: rgba(47, 158, 116, 0.16); }
+    .period-item.active .period-icon { background: rgba(42, 157, 110, 0.16); }
 
     .datetime-picker {
       display: flex;
@@ -230,36 +300,38 @@
       flex: 1 1 0;
       min-width: 0;
       padding: 8px 6px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,251,0.9) 100%);
-      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: var(--input-bg);
+      border: 1px solid var(--border);
       border-radius: 16px;
       font-size: var(--font-base);
       outline: none;
       color: var(--text);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
 
     .note-input {
       width: 100%;
       padding: 6px 8px;
-      border: 1px solid rgba(148, 163, 184, 0.16);
+      border: 1px solid var(--border);
       border-radius: 16px;
       font-size: var(--font-base);
       resize: none;
       min-height: 64px;
       outline: none;
-      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(244,248,251,0.9) 100%);
+      background: var(--input-bg);
       color: var(--text);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
     .note-input:focus {
-      border-color: rgba(47, 158, 116, 0.36);
-      box-shadow: 0 0 0 4px rgba(47, 158, 116, 0.12);
+      border-color: rgba(42, 157, 110, 0.36);
+      box-shadow: 0 0 0 4px rgba(42, 157, 110, 0.12);
     }
 
     .save-section { margin-top: 10px; }
     .btn-primary {
       width: 100%;
       padding: 14px 16px;
-      background: linear-gradient(135deg, var(--primary) 0%, #49b88d 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, #3fb88a 100%);
       color: white;
       border: none;
       border-radius: 16px;
@@ -267,7 +339,7 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
-      box-shadow: 0 16px 26px rgba(47, 158, 116, 0.24);
+      box-shadow: 0 16px 26px rgba(42, 157, 110, 0.24);
     }
     .btn-primary:disabled {
       background: linear-gradient(135deg, #c8d4dc 0%, #b7c5cf 100%);
@@ -275,16 +347,24 @@
       cursor: not-allowed;
       color: rgba(255,255,255,0.82);
     }
+    [data-theme="dark"] .btn-primary:disabled {
+      background: linear-gradient(135deg, #2a3440 0%, #232d36 100%);
+      color: rgba(255,255,255,0.4);
+    }
     .btn-primary:active:not(:disabled) {
-      background: linear-gradient(135deg, var(--primary-dark) 0%, #2f9e74 100%);
-      transform: translateY(1px) scale(0.99);
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      transform: translateY(1px) scale(0.97);
+      transition: transform 0.1s ease;
     }
 
     .last-record {
       margin-top: 6px;
       background: linear-gradient(135deg, #f8fffb 0%, #e7f7ef 52%, #d9f2e7 100%);
-      border-color: rgba(47, 158, 116, 0.16);
-      box-shadow: 0 18px 36px rgba(47, 158, 116, 0.14);
+      border-color: rgba(42, 157, 110, 0.16);
+      box-shadow: 0 18px 36px rgba(42, 157, 110, 0.14);
+    }
+    [data-theme="dark"] .last-record {
+      background: linear-gradient(135deg, rgba(42, 157, 110, 0.12) 0%, rgba(42, 157, 110, 0.06) 100%);
     }
     .last-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .last-title { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
@@ -298,7 +378,7 @@
       color: var(--text-secondary);
       padding: 6px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.52);
+      background: var(--glass-bg);
     }
 
     .filter-bar {
@@ -307,16 +387,17 @@
       align-items: center;
       gap: 12px;
       padding: 6px 8px;
-      background: rgba(255, 255, 255, 0.78);
+      background: var(--glass-bg);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--glass-border);
       border-radius: 20px;
       margin: 0 0 10px;
       position: sticky;
       top: 12px;
       z-index: 10;
       box-shadow: var(--shadow-sm);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
 
     .date-header {
@@ -331,6 +412,10 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       z-index: 5;
+      transition: background 0.4s ease;
+    }
+    [data-theme="dark"] .date-header {
+      background: linear-gradient(180deg, rgba(15, 20, 25, 0.96) 0%, rgba(15, 20, 25, 0.8) 100%);
     }
     .date-title {
       font-size: var(--font-lg);
@@ -342,17 +427,18 @@
       color: var(--text-secondary);
       padding: 7px 10px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.72);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+      background: var(--glass-bg);
+      box-shadow: var(--inset-shadow);
       white-space: nowrap;
     }
     .filter-bar input {
       padding: 11px 13px;
-      background: rgba(244, 248, 251, 0.92);
-      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: var(--primary-soft-2);
+      border: 1px solid var(--border);
       border-radius: 14px;
       font-size: var(--font-base);
       color: var(--text);
+      transition: background 0.4s ease;
     }
     .stats-text {
       font-size: calc(12px * var(--font-scale));
@@ -416,13 +502,13 @@
     .record-item {
       display: flex;
       align-items: center;
-      padding: 12px 12px 12px 10px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(249,251,253,0.94) 100%);
-      border: 1px solid rgba(255,255,255,0.82);
+      padding: 14px 14px 14px 10px;
+      background: var(--card);
+      border: 1px solid var(--glass-border);
       border-radius: 22px;
       position: relative;
       transform: translateX(0);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, background 0.4s ease;
       touch-action: pan-y;
       user-select: none;
       box-shadow: var(--shadow-sm);
@@ -438,9 +524,10 @@
     .record-left {
       text-align: center;
       min-width: 72px;
-      padding: 8px 6px;
+      padding: 10px 8px;
       border-radius: 16px;
-      background: linear-gradient(180deg, rgba(47, 158, 116, 0.08) 0%, rgba(47, 158, 116, 0.03) 100%);
+      background: var(--primary-soft-2);
+      border-left: 3px solid var(--primary);
     }
     .record-value { font-size: var(--font-2xl); font-weight: 700; color: var(--success); }
     .record-value.abnormal { color: var(--danger); }
@@ -462,7 +549,7 @@
       align-items: center;
       justify-content: center;
       border-radius: 9px;
-      background: rgba(47, 158, 116, 0.1);
+      background: rgba(42, 157, 110, 0.1);
       font-size: calc(13px * var(--font-scale));
     }
     .record-time { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
@@ -470,9 +557,10 @@
       font-size: calc(12px * var(--font-scale));
       color: var(--text-secondary);
       margin-top: 6px;
-      padding: 6px 8px;
+      padding: 6px 10px;
       border-radius: 12px;
-      background: rgba(244, 248, 251, 0.94);
+      background: var(--primary-soft-2);
+      border-left: 2px solid var(--primary-soft);
       font-style: normal;
     }
     .record-right { margin-left: 8px; }
@@ -480,7 +568,7 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      box-shadow: 0 0 0 6px rgba(47, 158, 116, 0.08);
+      box-shadow: 0 0 0 6px rgba(42, 157, 110, 0.08);
     }
     .status-dot.normal { background: var(--success); }
     .status-dot.abnormal {
@@ -498,10 +586,11 @@
     .stat-card {
       text-align: center;
       padding: 14px 10px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,250,252,0.96) 100%);
-      border: 1px solid rgba(255,255,255,0.82);
+      background: var(--card);
+      border: 1px solid var(--glass-border);
       border-radius: 20px;
       box-shadow: var(--shadow-sm);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
     .stat-value { font-size: var(--font-2xl); font-weight: 700; margin-bottom: 4px; }
     .stat-label { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); font-weight: 600; }
@@ -509,16 +598,30 @@
     .legend-item { display: flex; align-items: center; gap: 2px; }
     .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
+    /* Settings page */
+    .settings-group {
+      margin-bottom: 12px;
+    }
+    .settings-group-title {
+      font-size: calc(12px * var(--font-scale));
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 10px 4px 6px;
+    }
+
     .setting-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,250,252,0.96) 100%);
-      border: 1px solid rgba(255,255,255,0.82);
+      background: var(--card);
+      border: 1px solid var(--glass-border);
       border-radius: 20px;
       margin-bottom: 6px;
       box-shadow: var(--shadow-sm);
+      transition: background 0.4s ease, border-color 0.4s ease;
     }
     .setting-left { display: flex; align-items: center; gap: 12px; }
     .setting-icon {
@@ -535,22 +638,61 @@
     .setting-desc { font-size: calc(12px * var(--font-scale)); color: var(--text-secondary); }
     .setting-right { color: var(--text-secondary); }
 
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 28px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #c8d4dc;
+      border-radius: 28px;
+      transition: background 0.3s ease;
+    }
+    [data-theme="dark"] .toggle-slider {
+      background: #3a4550;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--primary);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
     .font-size-selector { display: flex; gap: 8px; }
     .font-size-btn {
       padding: 8px 12px;
-      border: 1px solid rgba(148, 163, 184, 0.18);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      background: rgba(255,255,255,0.88);
+      background: var(--glass-bg);
       cursor: pointer;
       font-size: var(--font-base);
       transition: all 0.2s ease;
       color: var(--text-secondary);
     }
     .font-size-btn.active {
-      border-color: rgba(47, 158, 116, 0.3);
+      border-color: rgba(42, 157, 110, 0.3);
       background: var(--primary-soft);
       color: var(--primary);
-      box-shadow: 0 10px 20px rgba(47, 158, 116, 0.14);
+      box-shadow: 0 10px 20px rgba(42, 157, 110, 0.14);
     }
     .font-size-btn:active { transform: scale(0.95); }
 
@@ -560,16 +702,20 @@
       left: 12px;
       right: 12px;
       display: flex;
-      background: rgba(255, 255, 255, 0.82);
+      background: var(--glass-bg);
       backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
-      border: 1px solid rgba(255,255,255,0.76);
+      border: 1px solid var(--glass-border);
       box-shadow: 0 22px 50px rgba(20, 34, 46, 0.12);
       padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
       border-radius: 22px;
       z-index: 100;
       max-width: 760px;
       margin: 0 auto;
+      transition: background 0.4s ease, border-color 0.4s ease;
+    }
+    [data-theme="dark"] .tab-bar {
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.3);
     }
     .tab-item {
       flex: 1;
@@ -578,16 +724,33 @@
       align-items: center;
       justify-content: center;
       gap: 2px;
-      padding: 8px 0 6px;
+      padding: 8px 0 10px;
       cursor: pointer;
       color: var(--text-secondary);
-      transition: color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      transition: color 0.3s ease, transform 0.3s ease, background 0.3s ease;
       border-radius: 20px;
+      position: relative;
     }
     .tab-item.active {
       color: var(--primary);
-      background: linear-gradient(180deg, rgba(47, 158, 116, 0.12) 0%, rgba(47, 158, 116, 0.06) 100%);
+      background: linear-gradient(180deg, rgba(42, 157, 110, 0.12) 0%, rgba(42, 157, 110, 0.04) 100%);
       transform: translateY(-1px);
+    }
+    .tab-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--primary);
+      animation: tabIndicator 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes tabIndicator {
+      from { width: 0; opacity: 0; }
+      to { width: 20px; opacity: 1; }
     }
     .tab-icon {
       width: 28px;
@@ -598,10 +761,11 @@
       font-size: calc(14px * var(--font-scale));
       margin-bottom: 0;
       border-radius: 12px;
-      background: rgba(244, 248, 251, 0.92);
+      background: var(--primary-soft-2);
+      transition: background 0.3s ease;
     }
     .tab-item.active .tab-icon {
-      background: rgba(47, 158, 116, 0.14);
+      background: rgba(42, 157, 110, 0.14);
     }
     .tab-text { font-size: calc(10px * var(--font-scale)); font-weight: 600; }
 
@@ -626,8 +790,8 @@
     .btn-export {
       width: 100%;
       padding: 15px 16px;
-      background: rgba(255,255,255,0.88);
-      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: var(--glass-bg);
+      border: 1px solid var(--border);
       border-radius: 16px;
       font-size: var(--font-base);
       cursor: pointer;
@@ -635,8 +799,9 @@
       color: var(--text);
       font-weight: 600;
       box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
     }
-    .btn-export:active { background: rgba(244, 248, 251, 0.94); }
+    .btn-export:active { transform: scale(0.97); transition: transform 0.1s ease; }
     .btn-danger {
       background: linear-gradient(135deg, #ef7a88 0%, #de5968 100%);
       color: white;
@@ -645,9 +810,10 @@
     }
 
     @media (max-width: 520px) {
-      .page { padding-top: 16px; }
-      .period-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .filter-bar { flex-wrap: wrap; align-items: stretch; }
+      .page { padding: 8px 8px 0; }
+      .card { padding: 10px; border-radius: 16px; }
+      .period-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+      .filter-bar { flex-wrap: wrap; align-items: stretch; padding: 6px; }
       .filter-bar input { width: 100%; }
       .stats-text { width: 100%; text-align: left; }
       .date-header {
@@ -658,9 +824,20 @@
       .datetime-picker { flex-direction: row; }
       #date-input, #time-input { width: 50%; }
       .stats-grid { grid-template-columns: 1fr; }
-      .tab-bar { left: 10px; right: 10px; bottom: 10px; }
-      .record-item { padding-right: 14px; }
-      .record-left { min-width: 74px; }
+      .tab-bar { left: 8px; right: 8px; bottom: 8px; border-radius: 18px; }
+      .record-item { padding: 10px 12px 10px 8px; }
+      .record-left { min-width: 68px; }
+      .settings-group-title { font-size: calc(11px * var(--font-scale)); }
+    }
+
+    @media (min-width: 521px) and (max-width: 760px) {
+      .page { padding: 12px 16px 0; }
+    }
+
+    @media (min-width: 761px) {
+      .page { padding: 16px 20px 0; }
+      .card { padding: 16px; }
+      .record-item { padding: 16px; }
     }
   </style>
 </head>
@@ -758,37 +935,62 @@
   <!-- 设置页面 -->
   <div id="page-settings" class="page">
     <div class="header"><span class="title">⚙︎ 设置</span></div>
-    <div class="setting-item" style="flex-direction: column; align-items: stretch;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <div class="setting-left">
-          <span class="setting-icon">🔤</span>
-          <div><div class="setting-title">字体大小</div><div class="setting-desc">适合老年人使用</div></div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">显示</div>
+      <div class="setting-item" style="flex-direction: column; align-items: stretch;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div class="setting-left">
+            <span class="setting-icon">🔤</span>
+            <div><div class="setting-title">字体大小</div><div class="setting-desc">适合老年人使用</div></div>
+          </div>
+        </div>
+        <div class="font-size-selector">
+          <button class="font-size-btn" data-size="normal">标准</button>
+          <button class="font-size-btn" data-size="large">大</button>
+          <button class="font-size-btn" data-size="xlarge">特大</button>
+          <button class="font-size-btn" data-size="xxlarge">超大</button>
         </div>
       </div>
-      <div class="font-size-selector">
-        <button class="font-size-btn" data-size="normal">标准</button>
-        <button class="font-size-btn" data-size="large">大</button>
-        <button class="font-size-btn" data-size="xlarge">特大</button>
-        <button class="font-size-btn" data-size="xxlarge">超大</button>
+      <div class="setting-item">
+        <div class="setting-left">
+          <span class="setting-icon">🌙</span>
+          <div><div class="setting-title">深色模式</div><div class="setting-desc">护眼暗色主题</div></div>
+        </div>
+        <div class="setting-right">
+          <label class="toggle-switch" aria-label="切换深色模式">
+            <input type="checkbox" id="dark-mode-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
     </div>
-    <div class="setting-item">
-      <div class="setting-left"><span class="setting-icon">📋</span><div><div class="setting-title">总记录数</div><div class="setting-desc">已保存的血糖记录</div></div></div>
-      <div class="setting-right" id="total-records">0 条</div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">数据</div>
+      <div class="setting-item">
+        <div class="setting-left"><span class="setting-icon">📋</span><div><div class="setting-title">总记录数</div><div class="setting-desc">已保存的血糖记录</div></div></div>
+        <div class="setting-right" id="total-records">0 条</div>
+      </div>
+      <div class="setting-item">
+        <div class="setting-left"><span class="setting-icon">📅</span><div><div class="setting-title">首条记录</div><div class="setting-desc">开始记录的日期</div></div></div>
+        <div class="setting-right" id="first-record-date">--</div>
+      </div>
     </div>
-    <div class="setting-item">
-      <div class="setting-left"><span class="setting-icon">📅</span><div><div class="setting-title">首条记录</div><div class="setting-desc">开始记录的日期</div></div></div>
-      <div class="setting-right" id="first-record-date">--</div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">备份与恢复</div>
+      <div class="setting-item" id="backup-btn" style="cursor: pointer;">
+        <div class="setting-left"><span class="setting-icon">💾</span><div><div class="setting-title">数据备份</div><div class="setting-desc">导出所有数据到本地</div></div></div>
+        <div class="setting-right">›</div>
+      </div>
+      <div class="setting-item" id="import-btn" style="cursor: pointer;">
+        <div class="setting-left"><span class="setting-icon">📥</span><div><div class="setting-title">数据导入</div><div class="setting-desc">从备份文件恢复数据</div></div></div>
+        <div class="setting-right">›</div>
+      </div>
+      <input type="file" id="import-file" accept=".csv" style="display: none;" />
     </div>
-    <div class="setting-item" id="backup-btn" style="cursor: pointer;">
-      <div class="setting-left"><span class="setting-icon">💾</span><div><div class="setting-title">数据备份</div><div class="setting-desc">导出所有数据到本地</div></div></div>
-      <div class="setting-right">›</div>
-    </div>
-    <div class="setting-item" id="import-btn" style="cursor: pointer;">
-      <div class="setting-left"><span class="setting-icon">📥</span><div><div class="setting-title">数据导入</div><div class="setting-desc">从备份文件恢复数据</div></div></div>
-      <div class="setting-right">›</div>
-    </div>
-    <input type="file" id="import-file" accept=".csv" style="display: none;" />
+
     <!-- FIX: Added ARIA label for clear data button -->
     <button class="btn-export btn-danger" id="clear-btn" aria-label="清除所有记录数据">🗑️ 清除所有数据</button>
   </div>
@@ -810,6 +1012,7 @@
     const STORAGE_KEY = 'bloodSugarRecords';
     const FONT_SIZE_KEY = 'bloodSugarFontSize';
     const VERSION_KEY = 'bloodSugarVersion';
+    const DARK_MODE_KEY = 'bloodSugarDarkMode';
 
     const PERIODS = [
       { value: 'fasting', label: '空腹', icon: '◔' },
@@ -845,6 +1048,7 @@
     function init() {
       loadRecords();
       loadFontSize();
+      loadDarkMode();
       renderQuickValues();
       renderPeriods();
       setCurrentDateTime();
@@ -913,6 +1117,25 @@
       });
     }
 
+    function loadDarkMode() {
+      try {
+        const isDark = localStorage.getItem(DARK_MODE_KEY) === 'true';
+        applyDarkMode(isDark);
+      } catch (error) {
+        console.error('Error loading dark mode:', error);
+      }
+    }
+
+    function applyDarkMode(isDark) {
+      if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      const toggle = document.getElementById('dark-mode-toggle');
+      if (toggle) toggle.checked = isDark;
+    }
+
     function renderQuickValues() {
       // FIX: Added ARIA labels to quick value buttons
       document.getElementById('quick-values').innerHTML = QUICK_VALUES.map(v =>
@@ -942,7 +1165,7 @@
       else if (hour >= 18 && hour < 21) period = 'after_dinner';
       else if (hour >= 21) period = 'before_sleep';
       else period = 'random';
-      
+
       state.period = period;
       renderPeriods();
     }
@@ -954,13 +1177,13 @@
       const day = String(now.getDate()).padStart(2, '0');
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
-      
+
       state.date = `${year}-${month}-${day}`;
       state.time = `${hours}:${minutes}`;
-      
+
       document.getElementById('date-input').value = state.date;
       document.getElementById('time-input').value = state.time;
-      
+
       // 自动选择时段
       autoSelectPeriod(now.getHours());
     }
@@ -1161,6 +1384,23 @@
           applyFontSize(state.fontSize);
           showToast('字体已调整 ✅');
         });
+      });
+
+      // Dark mode toggle
+      document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {
+        const isDark = e.target.checked;
+        applyDarkMode(isDark);
+        try {
+          localStorage.setItem(DARK_MODE_KEY, isDark.toString());
+        } catch (error) {
+          console.error('Error saving dark mode preference:', error);
+        }
+        showToast(isDark ? '已切换深色模式' : '已切换浅色模式');
+        // Re-render chart if on chart page
+        const chartPage = document.getElementById('page-chart');
+        if (chartPage.classList.contains('active')) {
+          renderChart();
+        }
       });
     }
 
@@ -1371,9 +1611,17 @@
 
       const ctx = document.getElementById('trend-chart').getContext('2d');
       const css = getComputedStyle(document.documentElement);
-      const primary = css.getPropertyValue('--primary').trim() || '#2f9e74';
+      const primary = css.getPropertyValue('--primary').trim() || '#2a9d6e';
       const warning = css.getPropertyValue('--warning').trim() || '#f0a43a';
       const danger = css.getPropertyValue('--danger').trim() || '#e35d6a';
+      const textMuted = css.getPropertyValue('--text-muted').trim() || '#94a3b3';
+
+      // Create gradient fill
+      const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight || 250);
+      gradient.addColorStop(0, 'rgba(42, 157, 110, 0.25)');
+      gradient.addColorStop(0.5, 'rgba(42, 157, 110, 0.08)');
+      gradient.addColorStop(1, 'rgba(42, 157, 110, 0.0)');
+
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'line',
@@ -1383,17 +1631,20 @@
             label: '血糖值',
             data: avgValues.length ? avgValues : [0],
             borderColor: primary,
-            backgroundColor: 'rgba(47, 158, 116, 0.12)',
+            backgroundColor: gradient,
             fill: true,
             tension: 0.38,
+            borderWidth: 2.5,
             pointBackgroundColor: avgValues.map(v => {
               const num = parseFloat(v);
               if (num < 3.9 || num > 11.1) return danger;
               if (num > 7.0) return warning;
               return primary;
             }),
-            pointRadius: 5,
-            pointHoverRadius: 6
+            pointBorderColor: css.getPropertyValue('--card-strong').trim() || '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            pointHoverRadius: 9
           }]
         },
         options: {
@@ -1402,15 +1653,15 @@
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              grid: { display: false },
-              ticks: { color: '#7b8a99' }
+              grid: { display: true, color: 'rgba(148, 163, 184, 0.08)', drawBorder: false },
+              ticks: { color: textMuted }
             },
             y: {
               min: 3,
               max: 15,
-              title: { display: true, text: 'mmol/L', color: '#7b8a99' },
-              ticks: { color: '#7b8a99' },
-              grid: { color: 'rgba(148, 163, 184, 0.18)' }
+              title: { display: true, text: 'mmol/L', color: textMuted },
+              ticks: { color: textMuted },
+              grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false }
             }
           }
         }
